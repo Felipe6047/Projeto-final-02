@@ -1,0 +1,9 @@
+{
+  "name": "fidelizacao-gamificacao-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npx --yes serve . -p 5500",
+    "dev": "npx --yes live-server --port=5500 --no-browser"
+  }
+}
