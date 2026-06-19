@@ -33,7 +33,8 @@ async function runSeed(): Promise<void> {
     }
 
     console.log("[FRIK] Inserting loyalty levels...");
-    await AppDataSource.getRepository(NivelFidelidade).save([
+    try {
+      await AppDataSource.getRepository(NivelFidelidade).save([
       {
         nome: "Bronze",
         slug: "bronze",
@@ -95,10 +96,15 @@ async function runSeed(): Promise<void> {
         pontosMinimos: 15000,
       },
     ]);
-    console.log("[FRIK] ✓ Loyalty levels inserted");
+      console.log("[FRIK] ✓ Loyalty levels inserted");
+    } catch (err) {
+      console.error("[FRIK] ✗ Loyalty levels error:", err);
+      throw err;
+    }
 
     console.log("[FRIK] Inserting achievements (conquistas)...");
-    await AppDataSource.getRepository(Conquista).save([
+    try {
+      await AppDataSource.getRepository(Conquista).save([
       {
         slug: "amigo_ouro",
         nome: "Amigo Ouro",
@@ -160,10 +166,15 @@ async function runSeed(): Promise<void> {
         icone: "waving_hand",
       },
     ]);
-    console.log("[FRIK] ✓ Achievements inserted");
+      console.log("[FRIK] ✓ Achievements inserted");
+    } catch (err) {
+      console.error("[FRIK] ✗ Achievements error:", err);
+      throw err;
+    }
 
     console.log("[FRIK] Inserting coupon templates...");
-    const templates = await AppDataSource.getRepository(CupomTemplate).save([
+    try {
+      const templates = await AppDataSource.getRepository(CupomTemplate).save([
       {
         titulo: "20% off Eletrônicos",
         descricao: "Desconto em eletrônicos selecionados",
@@ -279,10 +290,15 @@ async function runSeed(): Promise<void> {
         limiteTotal: 20,
       },
     ] as Partial<CupomTemplate>[]);
-    console.log("[FRIK] ✓ Coupon templates inserted");
+      console.log("[FRIK] ✓ Coupon templates inserted");
+    } catch (err) {
+      console.error("[FRIK] ✗ Coupon templates error:", err);
+      throw err;
+    }
 
     console.log("[FRIK] Inserting products...");
-    await AppDataSource.getRepository(Produto).save([
+    try {
+      await AppDataSource.getRepository(Produto).save([
       {
         nome: "Caneca FRIK",
         descricao: "Caneca personalizada 350ml com logo exclusivo",
@@ -428,10 +444,15 @@ async function runSeed(): Promise<void> {
         imagemUrl: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=400&fit=crop",
       },
     ]);
-    console.log("[FRIK] ✓ Products inserted");
+      console.log("[FRIK] ✓ Products inserted (16 total)");
+    } catch (err) {
+      console.error("[FRIK] ✗ Products error:", err);
+      throw err;
+    }
 
     console.log("[FRIK] Inserting missions...");
-    await AppDataSource.getRepository(Missao).save([
+    try {
+      await AppDataSource.getRepository(Missao).save([
       {
         titulo: "Primeira troca",
         descricao: "Realize sua primeira troca de cupom",
@@ -505,11 +526,16 @@ async function runSeed(): Promise<void> {
         ativa: true,
       },
     ]);
-    console.log("[FRIK] ✓ Missions inserted");
+      console.log("[FRIK] ✓ Missions inserted");
+    } catch (err) {
+      console.error("[FRIK] ✗ Missions error:", err);
+      throw err;
+    }
 
     console.log("[FRIK] Inserting test users...");
-    const senhaHash = await bcrypt.hash("senha123", 10);
-    const usuarios = await AppDataSource.getRepository(Usuario).save([
+    try {
+      const senhaHash = await bcrypt.hash("senha123", 10);
+      const usuarios = await AppDataSource.getRepository(Usuario).save([
       {
         nome: "Ana Silva",
         email: "ana@frik.demo",
@@ -555,126 +581,150 @@ async function runSeed(): Promise<void> {
         ativo: true,
       },
     ]);
-    console.log("[FRIK] ✓ Test users inserted");
+      console.log("[FRIK] ✓ Test users inserted (4 total)");
+    } catch (err) {
+      console.error("[FRIK] ✗ Test users error:", err);
+      throw err;
+    }
 
     console.log("[FRIK] Inserting campaigns...");
-    const inicio = new Date();
-    inicio.setDate(inicio.getDate() - 1);
-    const fimCampanha = new Date();
-    fimCampanha.setDate(fimCampanha.getDate() + 30);
+    try {
+      const inicio = new Date();
+      inicio.setDate(inicio.getDate() - 1);
+      const fimCampanha = new Date();
+      fimCampanha.setDate(fimCampanha.getDate() + 30);
 
-    await AppDataSource.getRepository(Campanha).save({
-      titulo: "Boas-vindas Bronze",
-      descricao: "Bônus para novos membros nível Bronze",
-      segmentoJson: { nivel_slug: ["bronze"] },
-      inicioEm: inicio,
-      fimEm: fimCampanha,
-      ativa: true,
-    });
-    console.log("[FRIK] ✓ Campaigns inserted");
+      await AppDataSource.getRepository(Campanha).save({
+        titulo: "Boas-vindas Bronze",
+        descricao: "Bônus para novos membros nível Bronze",
+        segmentoJson: { nivel_slug: ["bronze"] },
+        inicioEm: inicio,
+        fimEm: fimCampanha,
+        ativa: true,
+      });
+      console.log("[FRIK] ✓ Campaigns inserted");
+    } catch (err) {
+      console.error("[FRIK] ✗ Campaigns error:", err);
+      throw err;
+    }
 
     console.log("[FRIK] Inserting user coupons...");
-    const validade25 = new Date();
-    validade25.setDate(validade25.getDate() + 25);
-    const validade40 = new Date();
-    validade40.setDate(validade40.getDate() + 40);
-    const validade20 = new Date();
-    validade20.setDate(validade20.getDate() + 20);
-    const validade10 = new Date();
-    validade10.setDate(validade10.getDate() + 10);
+    try {
+      const validade25 = new Date();
+      validade25.setDate(validade25.getDate() + 25);
+      const validade40 = new Date();
+      validade40.setDate(validade40.getDate() + 40);
+      const validade20 = new Date();
+      validade20.setDate(validade20.getDate() + 20);
+      const validade10 = new Date();
+      validade10.setDate(validade10.getDate() + 10);
 
-    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+      const fmt = (d: Date) => d.toISOString().slice(0, 10);
 
-    await AppDataSource.getRepository(CupomUsuario).save([
-      {
-        usuarioId: usuarios[0].id,
-        templateId: templates[0].id,
-        codigo: "FRIK-ANA-001",
-        status: "disponivel",
-        validadeAte: fmt(validade25),
-        origem: "compra",
-      },
-      {
-        usuarioId: usuarios[0].id,
-        templateId: templates[1].id,
-        codigo: "FRIK-ANA-002",
-        status: "disponivel",
-        validadeAte: fmt(validade40),
-        origem: "missao",
-      },
-      {
-        usuarioId: usuarios[1].id,
-        templateId: templates[0].id,
-        codigo: "FRIK-BRU-001",
-        status: "oferecido_troca",
-        validadeAte: fmt(validade20),
-        origem: "compra",
-      },
-      {
-        usuarioId: usuarios[2].id,
-        templateId: templates[2].id,
-        codigo: "FRIK-CAR-001",
-        status: "disponivel",
-        validadeAte: fmt(validade10),
-        origem: "campanha",
-      },
-    ]);
-    console.log("[FRIK] ✓ User coupons inserted");
+      await AppDataSource.getRepository(CupomUsuario).save([
+        {
+          usuarioId: usuarios[0].id,
+          templateId: templates[0].id,
+          codigo: "FRIK-ANA-001",
+          status: "disponivel",
+          validadeAte: fmt(validade25),
+          origem: "compra",
+        },
+        {
+          usuarioId: usuarios[0].id,
+          templateId: templates[1].id,
+          codigo: "FRIK-ANA-002",
+          status: "disponivel",
+          validadeAte: fmt(validade40),
+          origem: "missao",
+        },
+        {
+          usuarioId: usuarios[1].id,
+          templateId: templates[0].id,
+          codigo: "FRIK-BRU-001",
+          status: "oferecido_troca",
+          validadeAte: fmt(validade20),
+          origem: "compra",
+        },
+        {
+          usuarioId: usuarios[2].id,
+          templateId: templates[2].id,
+          codigo: "FRIK-CAR-001",
+          status: "disponivel",
+          validadeAte: fmt(validade10),
+          origem: "campanha",
+        },
+      ]);
+      console.log("[FRIK] ✓ User coupons inserted");
+    } catch (err) {
+      console.error("[FRIK] ✗ User coupons error:", err);
+      throw err;
+    }
 
     console.log("[FRIK] Inserting seasonal events...");
-    const fimEvento = new Date();
-    fimEvento.setDate(fimEvento.getDate() + 7);
+    try {
+      const fimEvento = new Date();
+      fimEvento.setDate(fimEvento.getDate() + 7);
 
-    await AppDataSource.getRepository(EventoSazonal).save({
-      titulo: "Semana do Troca-Troca",
-      descricao: "+2 trocas extras para todos os níveis!",
-      trocasExtras: 2,
-      inicioEm: new Date(),
-      fimEm: fimEvento,
-      ativo: true,
-    });
-    console.log("[FRIK] ✓ Seasonal events inserted");
+      await AppDataSource.getRepository(EventoSazonal).save({
+        titulo: "Semana do Troca-Troca",
+        descricao: "+2 trocas extras para todos os níveis!",
+        trocasExtras: 2,
+        inicioEm: new Date(),
+        fimEm: fimEvento,
+        ativo: true,
+      });
+      console.log("[FRIK] ✓ Seasonal events inserted");
+    } catch (err) {
+      console.error("[FRIK] ✗ Seasonal events error:", err);
+      throw err;
+    }
 
     console.log("[FRIK] Inserting credit cards...");
-    await AppDataSource.getRepository(CartaoCredito).save([
-      {
-        usuarioId: usuarios[0].id,
-        apelido: "Meu Cartão (Mastercard)",
-        numero: "5582951614393600",
-        nomeTitular: "ANA SILVA",
-        validade: "02/27",
-        cvv: "945",
-        principal: true,
-      },
-      {
-        usuarioId: usuarios[1].id,
-        apelido: "Cartão Visa",
-        numero: "4539579713773567",
-        nomeTitular: "BRUNO COSTA",
-        validade: "06/28",
-        cvv: "696",
-        principal: true,
-      },
-      {
-        usuarioId: usuarios[2].id,
-        apelido: "Master Principal",
-        numero: "5290030760984091",
-        nomeTitular: "CARLA MENDES",
-        validade: "02/27",
-        cvv: "112",
-        principal: true,
-      },
-      {
-        usuarioId: usuarios[3].id,
-        apelido: "Cartão Business",
-        numero: "5108666834191510",
-        nomeTitular: "ADMIN FRIK",
-        validade: "12/27",
-        cvv: "900",
-        principal: true,
-      },
-    ]);
-    console.log("[FRIK] ✓ Credit cards inserted");
+    try {
+      await AppDataSource.getRepository(CartaoCredito).save([
+        {
+          usuarioId: usuarios[0].id,
+          apelido: "Meu Cartão (Mastercard)",
+          numero: "5582951614393600",
+          nomeTitular: "ANA SILVA",
+          validade: "02/27",
+          cvv: "945",
+          principal: true,
+        },
+        {
+          usuarioId: usuarios[1].id,
+          apelido: "Cartão Visa",
+          numero: "4539579713773567",
+          nomeTitular: "BRUNO COSTA",
+          validade: "06/28",
+          cvv: "696",
+          principal: true,
+        },
+        {
+          usuarioId: usuarios[2].id,
+          apelido: "Master Principal",
+          numero: "5290030760984091",
+          nomeTitular: "CARLA MENDES",
+          validade: "02/27",
+          cvv: "112",
+          principal: true,
+        },
+        {
+          usuarioId: usuarios[3].id,
+          apelido: "Cartão Business",
+          numero: "5108666834191510",
+          nomeTitular: "ADMIN FRIK",
+          validade: "12/27",
+          cvv: "900",
+          principal: true,
+        },
+      ]);
+      console.log("[FRIK] ✓ Credit cards inserted");
+    } catch (err) {
+      console.error("[FRIK] ✗ Credit cards error:", err);
+      throw err;
+    }
 
     console.log("[FRIK] ✅ COMPLETE SEED SUCCESSFULLY APPLIED!");
   } catch (error) {
