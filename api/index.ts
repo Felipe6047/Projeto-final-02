@@ -4,67 +4,83 @@ import app from "../src/app";
 import { initializeDatabase } from "../src/config/database";
 
 let databaseInit: Promise<void> | null = null;
-let isWarmingUp = false;
+let initAttempts = 0;
+const MAX_INIT_ATTEMPTS = 3;
 
 async function ensureDatabase() {
   if (!databaseInit) {
-    console.log("[FRIK] Starting database initialization in Vercel environment...");
     databaseInit = initializeDatabase().catch((error) => {
-      console.error("[FRIK] Database initialization failed, will retry:", error);
-      databaseInit = null;
+      initAttempts++;
+      if (initAttempts < MAX_INIT_ATTEMPTS) {
+        console.warn(`[FRIK] Database initialization failed (attempt ${initAttempts}/${MAX_INIT_ATTEMPTS}), will retry:`, error);
+        databaseInit = null;
+      } else {
+        console.error(`[FRIK] Database initialization failed after ${MAX_INIT_ATTEMPTS} attempts:`, error);
+      }
       throw error;
     });
   }
   return databaseInit;
 }
 
-// Warm-up function para garantir que o banco está totalmente pronto
+// Warm-up function que AGUARDA tudo estar pronto antes de liberar
 async function warmupDatabase() {
-  if (isWarmingUp) return;
-  isWarmingUp = true;
+  const maxWarmupTime = 30000; // 30 segundos máximo
+  const startTime = Date.now();
 
   try {
-    console.log("[FRIK] Starting database warm-up...");
+    console.log("[FRIK] === VERCEL COLD START DETECTED ===");
     console.log("[FRIK] Environment:", {
       NODE_ENV: process.env.NODE_ENV,
-      DB_HOST: process.env.DB_HOST,
-      DB_DATABASE: process.env.DB_NAME,
+      DATABASE_URL_EXISTS: !!process.env.DATABASE_URL,
+      DB_HOST: process.env.DB_HOST || "not-set",
+      DB_NAME: process.env.DB_NAME || "not-set",
     });
     
+    console.log("[FRIK] Initializing database connection...");
     await ensureDatabase();
+    console.log("[FRIK] ✓ Database connection established");
     
-    // Aguardar um pouco para garantir que migrations e seed completaram
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Aguardar mais um tempo para garantir que seed terminou
+    console.log("[FRIK] Waiting for migrations and seed to complete...");
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     
-    console.log("[FRIK] ✓ Database warm-up completed successfully (migrations and seed ready)");
+    const elapsed = Date.now() - startTime;
+    console.log(`[FRIK] ✓ Cold start completed in ${elapsed}ms (migrations and seed ready)`);
   } catch (error) {
-    console.error("[FRIK] Database warm-up failed:", error);
-    console.error("[FRIK] Full error details:", {
+    const elapsed = Date.now() - startTime;
+    console.error(`[FRIK] ✗ Cold start failed after ${elapsed}ms:`, error);
+    console.error("[FRIK] Error details:", {
       message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
+      code: error instanceof Error ? (error as any).code : undefined,
     });
-    isWarmingUp = false;
-    // Don't throw - log but continue, the first request will also try to init
+    // NÃO rethrow - deixar prosseguir, a primeira requisição vai tentar again
   }
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   try {
-    // Garantir que o banco está inicializado antes de qualquer requisição
-    console.log("[FRIK] Incoming request - ensuring database is ready...");
-    await ensureDatabase();
-    console.log("[FRIK] ✓ Database is ready, routing request to Express app");
-  } catch (error) {
-    console.error("[FRIK] CRITICAL: Database initialization failed on request handler:", error);
-    console.error("[FRIK] Error details:", {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
+    console.log("[FRIK] Incoming request:", {
+      method: req.method,
+      url: req.url,
+      timestamp: new Date().toISOString(),
     });
-    res.statusCode = 500;
+
+    // Garantir que o banco está inicializado
+    await ensureDatabase();
+    console.log("[FRIK] ✓ Database is ready");
+  } catch (error) {
+    console.error("[FRIK] ✗ Database initialization failed on request:", {
+      error: error instanceof Error ? error.message : String(error),
+      url: req.url,
+    });
+    
+    res.statusCode = 503;
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({
-      error: "Database initialization failed",
-      message: error instanceof Error ? error.message : String(error),
+      error: "Service Unavailable",
+      message: "Database is not ready. Please try again in a few seconds.",
+      details: error instanceof Error ? error.message : String(error),
     }));
     return;
   }
@@ -73,8 +89,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   return app(req as any, res as any);
 }
 
-// Chamar warm-up na importação do módulo (executa uma vez por cold start)
-console.log("[FRIK] Vercel API handler module loaded - starting async warm-up");
-warmupDatabase().catch((err) => {
-  console.error("[FRIK] Initial warm-up error (non-blocking):", err);
+// ========================================
+// EXECUTA NO CARREGAMENTO DO MÓDULO (COLD START)
+// ========================================
+console.log("[FRIK] API handler loaded - initiating cold start warm-up...");
+const warmupPromise = warmupDatabase();
+
+// Garantir que não deixa a requisição prosseguir sem warm-up completar
+warmupPromise.catch((err) => {
+  console.error("[FRIK] Warning: warm-up failed, will retry on first request:", err);
 });

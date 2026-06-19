@@ -26,15 +26,23 @@ async function runSeed(): Promise<void> {
   let templates: any[] = [];
 
   try {
-    console.log("[FRIK] Starting complete seed process...");
+    console.log("[FRIK] ========== SEED PROCESS START ==========");
+    console.log("[FRIK] Timestamp:", new Date().toISOString());
+    console.log("[FRIK] Database:", {
+      isInitialized: AppDataSource.isInitialized,
+      type: AppDataSource.options.type,
+      database: AppDataSource.options.database,
+    });
 
     // Check if seed already applied
+    console.log("[FRIK] Checking if seed was already applied...");
     const nivelCount = await AppDataSource.getRepository(NivelFidelidade).count();
     if (nivelCount > 0) {
-      console.log("[FRIK] ✓ Seed already applied (found " + nivelCount + " niveis)");
+      console.log(`[FRIK] ✓ Seed already applied (found ${nivelCount} niveis de fidelidade)`);
       return;
     }
 
+    console.log("[FRIK] ✓ No seed data found - proceeding with full seed...");
     console.log("[FRIK] Inserting loyalty levels...");
     try {
       await AppDataSource.getRepository(NivelFidelidade).save([
@@ -729,7 +737,17 @@ async function runSeed(): Promise<void> {
       throw err;
     }
 
-    console.log("[FRIK] ✅ COMPLETE SEED SUCCESSFULLY APPLIED!");
+    // Verificação final
+    const finalNivelCount = await AppDataSource.getRepository(NivelFidelidade).count();
+    const finalUsuarioCount = await AppDataSource.getRepository(Usuario).count();
+    
+    console.log("[FRIK] ========== SEED PROCESS COMPLETED ==========");
+    console.log("[FRIK] ✅ SEED SUCCESSFULLY APPLIED!");
+    console.log("[FRIK] Data summary:");
+    console.log(`  - Niveis de Fidelidade: ${finalNivelCount}`);
+    console.log(`  - Usuarios: ${finalUsuarioCount}`);
+    console.log("[FRIK] Timestamp:", new Date().toISOString());
+    console.log("[FRIK] ==========================================");
   } catch (error) {
     console.error("[FRIK] ✗ Seed error:", {
       message: error instanceof Error ? error.message : String(error),

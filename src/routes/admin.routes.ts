@@ -308,4 +308,46 @@ router.post("/system/seed", async (req, res, next) => {
   }
 });
 
+// 🔧 ENDPOINT DE STATUS (Vercel Debugging)
+router.get("/system/status", async (req, res, next) => {
+  try {
+    const { AppDataSource } = await import("../config/database");
+    const { NivelFidelidade } = await import("../entities/NivelFidelidade");
+    const { Usuario } = await import("../entities/Usuario");
+    const { Conquista } = await import("../entities/Conquista");
+    const { Produto } = await import("../entities/Produto");
+
+    const nivelCount = await AppDataSource.getRepository(NivelFidelidade).count();
+    const usuarioCount = await AppDataSource.getRepository(Usuario).count();
+    const conquistaCount = await AppDataSource.getRepository(Conquista).count();
+    const produtoCount = await AppDataSource.getRepository(Produto).count();
+
+    const seedApplied = nivelCount > 0;
+
+    return ok(res, {
+      status: "ok",
+      database: {
+        connected: AppDataSource.isInitialized,
+        type: "mysql",
+      },
+      seed: {
+        applied: seedApplied,
+        data: {
+          nivelFidelidade: nivelCount,
+          usuarios: usuarioCount,
+          conquistas: conquistaCount,
+          produtos: produtoCount,
+        },
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.error("[FRIK] Error on status check:", e);
+    return fail(res, 
+      `Erro ao verificar status: ${e instanceof Error ? e.message : String(e)}`, 
+      500
+    );
+  }
+});
+
 export default router;
