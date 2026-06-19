@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { AppDataSource } from "../config/database";
 import authRoutes from "./auth.routes";
 import mercadoRoutes from "./mercado.routes";
 import presentesRoutes from "./presentes.routes";
@@ -20,6 +21,19 @@ const router = Router();
 router.get("/health", (_req, res) => {
   res.json({ status: "ok", projeto: "FRIK API" });
 });
+ 
+ router.get("/health/db", async (_req, res) => {
+   try {
+     if (!AppDataSource.isInitialized) {
+       return res.status(200).json({ status: "ok", db: "not-initialized" });
+     }
+     const result = await AppDataSource.query("SELECT VERSION() AS version");
+     return res.status(200).json({ status: "ok", db: result[0] });
+   } catch (err) {
+     console.error("DB health check failed:", err);
+     return res.status(500).json({ status: "ok", db: "error", error: String(err) });
+   }
+ });
 
 router.use("/auth", authRoutes);
 router.use("/cartoes", cartaoRoutes);
