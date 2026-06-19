@@ -35,17 +35,38 @@ router.get("/health", (_req, res) => {
    }
  });
 
-router.use("/auth", authRoutes);
-router.use("/cartoes", cartaoRoutes);
-router.use("/mercado-cupons", mercadoRoutes);
-router.use("/presentes", presentesRoutes);
-router.use("/ranking", rankingRoutes);
-router.use("/produtos", produtosRoutes);
-router.use("/admin", adminRoutes);
-router.use("/compra", compraRoutes);
-router.use("/notificacoes", notificacaoRoutes);
-router.use("/salas", salasRoutes);
-router.use("/simulador-caixa", simuladorCaixaRoutes);
+// Endpoint de diagnóstico para verificar schema e migrations
+router.get("/health/schema", async (_req, res) => {
+  try {
+    if (!AppDataSource.isInitialized) {
+      return res.status(500).json({ status: "error", message: "Database not initialized" });
+    }
+
+    // Listar tabelas
+    const tables = await AppDataSource.query(
+      "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()"
+    );
+
+    // Listar migrations executadas
+    const migrations = await AppDataSource.query(
+      "SELECT migration FROM migrations ORDER BY timestamp"
+    ).catch(() => []);
+
+    return res.status(200).json({
+      status: "ok",
+      tables: tables.map((t: any) => t.TABLE_NAME),
+      migrations: migrations.map((m: any) => m.migration),
+      tableCount: tables.length,
+    });
+  } catch (err) {
+    console.error("Schema check failed:", err);
+    return res.status(500).json({
+      status: "error",
+      message: String(err),
+      error: err instanceof Error ? err.message : undefined,
+    });
+  }
+});
 router.use("/missoes", missoesRoutes);
 router.use("/campanhas", campanhasRoutes);
 router.use("/amigos", amigosRoutes);
