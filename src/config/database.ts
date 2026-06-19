@@ -12,7 +12,7 @@ import { CupomUsuario } from "../entities/CupomUsuario";
 import { EventoSazonal } from "../entities/EventoSazonal";
 import { CartaoCredito } from "../entities/CartaoCredito";
 
-export { AppDataSource };
+export { AppDataSource, runSeed };
 
 let migrationsInitialized = false;
 let seedInitialized = false;
@@ -21,6 +21,9 @@ let initializationPromise: Promise<void> | null = null;
 async function runSeed(): Promise<void> {
   if (seedInitialized) return;
   seedInitialized = true;
+
+  let usuarios: any[] = [];
+  let templates: any[] = [];
 
   try {
     console.log("[FRIK] Starting complete seed process...");

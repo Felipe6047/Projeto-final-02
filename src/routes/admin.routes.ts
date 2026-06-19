@@ -3,6 +3,7 @@ import { z } from "zod";
 import { adminAuth } from "../middleware/admin";
 import * as adminService from "../services/admin.service";
 import { fail, ok } from "../utils/http";
+import { runSeed } from "../config/database";
 
 const router = Router();
 router.use(...adminAuth);
@@ -286,6 +287,24 @@ router.delete("/eventos/:id", async (req, res, next) => {
     return ok(res, { ok: true });
   } catch (e) {
     next(e);
+  }
+});
+
+// 🔧 ENDPOINT DE SEED (Vercel Debugging)
+router.post("/system/seed", async (req, res, next) => {
+  try {
+    console.log("[FRIK] Admin requested manual seed execution via POST /admin/system/seed");
+    await runSeed();
+    return ok(res, { 
+      message: "Seed executado com sucesso",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.error("[FRIK] Error on manual seed:", e);
+    return fail(res, 
+      `Erro ao executar seed: ${e instanceof Error ? e.message : String(e)}`, 
+      500
+    );
   }
 });
 
