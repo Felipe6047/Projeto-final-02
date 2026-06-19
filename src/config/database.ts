@@ -4,7 +4,101 @@ import { env } from "./env";
 export { AppDataSource };
 
 let migrationsInitialized = false;
+let seedInitialized = false;
 let initializationPromise: Promise<void> | null = null;
+
+async function runSeed(): Promise<void> {
+  if (seedInitialized) return;
+  seedInitialized = true;
+
+  try {
+    console.log("[FRIK] Starting seed data...");
+
+    const { NivelFidelidade } = await import("../entities/NivelFidelidade");
+    const { Conquista } = await import("../entities/Conquista");
+    const { Usuario } = await import("../entities/Usuario");
+    const bcrypt = await import("bcrypt");
+
+    // Check if seed already applied
+    const nivelCount = await AppDataSource.getRepository(NivelFidelidade).count();
+    if (nivelCount > 0) {
+      console.log("[FRIK] ✓ Seed already applied — skipping");
+      return;
+    }
+
+    // Insert níveis de fidelidade
+    await AppDataSource.getRepository(NivelFidelidade).save([
+      {
+        nome: "Bronze",
+        slug: "bronze",
+        ordem: 1,
+        trocasMes: 1,
+        mesmoRankApenas: true,
+        podePresentearCupom: false,
+        podePresentearProduto: false,
+        valorMaxPresente: null,
+        podeCriarSalaTroca: false,
+        pontosMinimos: 0,
+      },
+      {
+        nome: "Prata",
+        slug: "prata",
+        ordem: 2,
+        trocasMes: 3,
+        mesmoRankApenas: false,
+        podePresentearCupom: true,
+        podePresentearProduto: false,
+        valorMaxPresente: null,
+        podeCriarSalaTroca: false,
+        pontosMinimos: 500,
+      },
+      {
+        nome: "Ouro",
+        slug: "ouro",
+        ordem: 3,
+        trocasMes: 10,
+        mesmoRankApenas: false,
+        podePresentearCupom: true,
+        podePresentearProduto: true,
+        valorMaxPresente: "100.00",
+        podeCriarSalaTroca: false,
+        pontosMinimos: 2000,
+      },
+      {
+        nome: "Platina",
+        slug: "platina",
+        ordem: 4,
+        trocasMes: null,
+        mesmoRankApenas: false,
+        podePresentearCupom: true,
+        podePresentearProduto: true,
+        valorMaxPresente: null,
+        podeCriarSalaTroca: true,
+        pontosMinimos: 5000,
+      },
+    ]);
+
+    // Insert test user
+    const hash = await bcrypt.default.hash("senha123", 10);
+    await AppDataSource.getRepository(Usuario).save({
+      nome: "Ana Silva",
+      email: "ana@frik.demo",
+      cpf: "12345678901",
+      telefone: "11999999999",
+      senhaHash: hash,
+      nivelId: 1,
+      papel: "cliente",
+      kycStatus: "aprovado",
+      ativo: true,
+    });
+
+    console.log("[FRIK] ✓ Seed data inserted successfully");
+  } catch (error) {
+    console.error("[FRIK] Seed error:", error);
+    seedInitialized = false;
+    throw error;
+  }
+}
 
 export async function initializeDatabase(): Promise<void> {
   // Evitar inicializações paralelas
@@ -78,6 +172,15 @@ export async function initializeDatabase(): Promise<void> {
           migrationsInitialized = false; // Permitir retry
           throw migrationError;
         }
+
+        // Rodar seed após migrations
+        try {
+          await runSeed();
+        } catch (seedError) {
+          console.error("[FRIK] ✗ Seed error:", seedError);
+          seedInitialized = false;
+          throw seedError;
+        }
       }
 
       console.log("[FRIK] ✓ Database initialization completed successfully");
@@ -88,6 +191,7 @@ export async function initializeDatabase(): Promise<void> {
       });
       initializationPromise = null;
       migrationsInitialized = false;
+      seedInitialized = false;
       throw error;
     }
   })();
