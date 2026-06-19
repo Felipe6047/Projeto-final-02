@@ -10,9 +10,10 @@ export function setupSwagger(app: Express) {
   app.use(
     "/api/docs",
     swaggerUi.serve,
-    swaggerUi.setup(openApiSpec, {
+    swaggerUi.setup(undefined, {
       customSiteTitle: "FRIK API — Swagger",
       swaggerOptions: {
+        url: "/api/docs.json",
         persistAuthorization: true,
         displayRequestDuration: true,
         filter: true,
