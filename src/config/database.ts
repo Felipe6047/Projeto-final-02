@@ -12,7 +12,7 @@ import { CupomUsuario } from "../entities/CupomUsuario";
 import { EventoSazonal } from "../entities/EventoSazonal";
 import { CartaoCredito } from "../entities/CartaoCredito";
 
-export { AppDataSource, runSeed };
+export { AppDataSource, initializeDatabase };
 
 let migrationsInitialized = false;
 let seedInitialized = false;
