@@ -1,5 +1,6 @@
 import { AppDataSource } from "./data-source";
 import { env } from "./env";
+import bcrypt from "bcrypt";
 
 export { AppDataSource };
 
@@ -12,89 +13,49 @@ async function runSeed(): Promise<void> {
   seedInitialized = true;
 
   try {
-    console.log("[FRIK] Starting seed data...");
+    console.log("[FRIK] Starting seed process...");
 
-    const { NivelFidelidade } = await import("../entities/NivelFidelidade");
-    const { Conquista } = await import("../entities/Conquista");
-    const { Usuario } = await import("../entities/Usuario");
-    const bcrypt = await import("bcrypt");
-
-    // Check if seed already applied
-    const nivelCount = await AppDataSource.getRepository(NivelFidelidade).count();
-    if (nivelCount > 0) {
-      console.log("[FRIK] ✓ Seed already applied — skipping");
+    // Check if seed already applied by checking if nivel_fidelidade has data
+    const nivelCount = await AppDataSource.query(
+      "SELECT COUNT(*) as count FROM nivel_fidelidade"
+    );
+    
+    if (nivelCount[0]?.count > 0) {
+      console.log("[FRIK] ✓ Seed already applied (found " + nivelCount[0].count + " niveis)");
       return;
     }
 
-    // Insert níveis de fidelidade
-    await AppDataSource.getRepository(NivelFidelidade).save([
-      {
-        nome: "Bronze",
-        slug: "bronze",
-        ordem: 1,
-        trocasMes: 1,
-        mesmoRankApenas: true,
-        podePresentearCupom: false,
-        podePresentearProduto: false,
-        valorMaxPresente: null,
-        podeCriarSalaTroca: false,
-        pontosMinimos: 0,
-      },
-      {
-        nome: "Prata",
-        slug: "prata",
-        ordem: 2,
-        trocasMes: 3,
-        mesmoRankApenas: false,
-        podePresentearCupom: true,
-        podePresentearProduto: false,
-        valorMaxPresente: null,
-        podeCriarSalaTroca: false,
-        pontosMinimos: 500,
-      },
-      {
-        nome: "Ouro",
-        slug: "ouro",
-        ordem: 3,
-        trocasMes: 10,
-        mesmoRankApenas: false,
-        podePresentearCupom: true,
-        podePresentearProduto: true,
-        valorMaxPresente: "100.00",
-        podeCriarSalaTroca: false,
-        pontosMinimos: 2000,
-      },
-      {
-        nome: "Platina",
-        slug: "platina",
-        ordem: 4,
-        trocasMes: null,
-        mesmoRankApenas: false,
-        podePresentearCupom: true,
-        podePresentearProduto: true,
-        valorMaxPresente: null,
-        podeCriarSalaTroca: true,
-        pontosMinimos: 5000,
-      },
-    ]);
+    console.log("[FRIK] Inserting loyalty levels (niveis de fidelidade)...");
+
+    // Insert niveis de fidelidade
+    await AppDataSource.query(`
+      INSERT INTO nivel_fidelidade (nome, slug, ordem, trocas_mes, mesmo_rank_apenas, pode_presentear_cupom, pode_presentear_produto, valor_max_presente, pode_criar_sala_troca, pontos_minimos)
+      VALUES
+        ('Bronze', 'bronze', 1, 1, 1, 0, 0, NULL, 0, 0),
+        ('Prata', 'prata', 2, 3, 0, 1, 0, NULL, 0, 500),
+        ('Ouro', 'ouro', 3, 10, 0, 1, 1, 100.00, 0, 2000),
+        ('Platina', 'platina', 4, NULL, 0, 1, 1, NULL, 1, 5000),
+        ('Diamante', 'diamante', 5, NULL, 0, 1, 1, NULL, 1, 15000)
+    `);
+
+    console.log("[FRIK] ✓ Loyalty levels inserted");
 
     // Insert test user
-    const hash = await bcrypt.default.hash("senha123", 10);
-    await AppDataSource.getRepository(Usuario).save({
-      nome: "Ana Silva",
-      email: "ana@frik.demo",
-      cpf: "12345678901",
-      telefone: "11999999999",
-      senhaHash: hash,
-      nivelId: 1,
-      papel: "cliente",
-      kycStatus: "aprovado",
-      ativo: true,
-    });
+    console.log("[FRIK] Inserting test user...");
+    const hash = await bcrypt.hash("senha123", 10);
+    
+    await AppDataSource.query(`
+      INSERT INTO usuario (nome, email, cpf, telefone, senha_hash, nivel_id, papel, kyc_status, ativo)
+      VALUES (?, ?, ?, ?, ?, 1, 'cliente', 'aprovado', 1)
+    `, ["Ana Silva", "ana@frik.demo", "12345678901", "11999999999", hash]);
 
-    console.log("[FRIK] ✓ Seed data inserted successfully");
+    console.log("[FRIK] ✓ Test user inserted (ana@frik.demo / senha123)");
+    console.log("[FRIK] ✓ Seed completed successfully");
   } catch (error) {
-    console.error("[FRIK] Seed error:", error);
+    console.error("[FRIK] ✗ Seed error:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     seedInitialized = false;
     throw error;
   }
@@ -129,9 +90,9 @@ export async function initializeDatabase(): Promise<void> {
       // Testar conexão com query simples
       try {
         const testQuery = await AppDataSource.query("SELECT 1 AS test");
-        console.log("[FRIK] ✓ Connection verified:", testQuery);
+        console.log("[FRIK] ✓ Connection verified");
       } catch (testError) {
-        console.error("[FRIK] Connection test failed:", testError);
+        console.error("[FRIK] ✗ Connection test failed:", testError);
         throw testError;
       }
 
@@ -153,7 +114,7 @@ export async function initializeDatabase(): Promise<void> {
           }
 
           // Pequeno delay para garantir que as mudanças foram aplicadas
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
 
           // Verificar se as tabelas foram criadas
           try {
@@ -161,15 +122,14 @@ export async function initializeDatabase(): Promise<void> {
               "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME"
             );
             console.log(
-              "[FRIK] ✓ Database schema ready with " + tables.length + " tables:",
-              tables.map((t: any) => t.TABLE_NAME).join(", ")
+              "[FRIK] ✓ Database schema ready with " + tables.length + " tables"
             );
           } catch (tableError) {
             console.error("[FRIK] Failed to list tables:", tableError);
           }
         } catch (migrationError) {
           console.error("[FRIK] ✗ Migration execution error:", migrationError);
-          migrationsInitialized = false; // Permitir retry
+          migrationsInitialized = false;
           throw migrationError;
         }
 
@@ -180,6 +140,13 @@ export async function initializeDatabase(): Promise<void> {
           console.error("[FRIK] ✗ Seed error:", seedError);
           seedInitialized = false;
           throw seedError;
+        }
+      } else {
+        // Migrations já rodaram, tenta seed se ainda não foi
+        try {
+          await runSeed();
+        } catch (seedError) {
+          console.error("[FRIK] Seed error on reinitialization:", seedError);
         }
       }
 
