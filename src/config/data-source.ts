@@ -29,4 +29,5 @@ export const AppDataSource = new DataSource({
   ],
   synchronize: false,
   logging: env.nodeEnv === "development",
+  ssl: env.db.ssl ? { rejectUnauthorized: false } : undefined,
 });
