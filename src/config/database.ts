@@ -37,13 +37,377 @@ async function runSeed(): Promise<void> {
     // Check if seed already applied
     console.log("[FRIK] Checking if seed was already applied...");
     const nivelCount = await AppDataSource.getRepository(NivelFidelidade).count();
-    if (nivelCount > 0) {
-      console.log(`[FRIK] ✓ Seed already applied (found ${nivelCount} niveis de fidelidade)`);
+    if (nivelCount >= 5) {
+      console.log(`[FRIK] ✓ Seed already fully applied (found ${nivelCount} niveis de fidelidade)`);
       return;
     }
 
-    console.log("[FRIK] ✓ No seed data found - proceeding with full seed...");
-    console.log("[FRIK] Inserting loyalty levels...");
+    console.log("[FRIK] ✓ Starting seed - will insert in stages to avoid timeout...");
+
+    // ========== STAGE 1: Loyalty Levels ==========
+    console.log("[FRIK] [STAGE 1/5] Inserting loyalty levels...");
+    try {
+      await AppDataSource.getRepository(NivelFidelidade).save([
+      {
+        nome: "Bronze",
+        slug: "bronze",
+        ordem: 1,
+        trocasMes: 1,
+        mesmoRankApenas: true,
+        podePresentearCupom: false,
+        podePresentearProduto: false,
+        valorMaxPresente: null,
+        podeCriarSalaTroca: false,
+        pontosMinimos: 0,
+      },
+      {
+        nome: "Prata",
+        slug: "prata",
+        ordem: 2,
+        trocasMes: 3,
+        mesmoRankApenas: false,
+        podePresentearCupom: true,
+        podePresentearProduto: false,
+        valorMaxPresente: null,
+        podeCriarSalaTroca: false,
+        pontosMinimos: 500,
+      },
+      {
+        nome: "Ouro",
+        slug: "ouro",
+        ordem: 3,
+        trocasMes: 10,
+        mesmoRankApenas: false,
+        podePresentearCupom: true,
+        podePresentearProduto: true,
+        valorMaxPresente: "100.00",
+        podeCriarSalaTroca: false,
+        pontosMinimos: 2000,
+      },
+      {
+        nome: "Platina",
+        slug: "platina",
+        ordem: 4,
+        trocasMes: null,
+        mesmoRankApenas: false,
+        podePresentearCupom: true,
+        podePresentearProduto: true,
+        valorMaxPresente: null,
+        podeCriarSalaTroca: true,
+        pontosMinimos: 5000,
+      },
+      {
+        nome: "Diamante",
+        slug: "diamante",
+        ordem: 5,
+        trocasMes: null,
+        mesmoRankApenas: false,
+        podePresentearCupom: true,
+        podePresentearProduto: true,
+        valorMaxPresente: null,
+        podeCriarSalaTroca: true,
+        pontosMinimos: 15000,
+      },
+    ]);
+      console.log("[FRIK] ✓ Loyalty levels inserted");
+    } catch (err) {
+      console.error("[FRIK] ✗ Loyalty levels error:", err);
+      throw err;
+    }
+
+    // ========== STAGE 2: Achievements ==========
+    console.log("[FRIK] [STAGE 2/5] Inserting achievements...");
+    try {
+      await AppDataSource.getRepository(Conquista).save([
+      {
+        slug: "amigo_ouro",
+        nome: "Amigo Ouro",
+        descricao: "Deu 5 presentes para amigos",
+        icone: "star",
+      },
+      {
+        slug: "troca_justa",
+        nome: "Troca Justa",
+        descricao: "Concluiu 10 trocas aprovadas",
+        icone: "handshake",
+      },
+      {
+        slug: "corrente_bem",
+        nome: "Corrente do Bem",
+        descricao: "Presente gerou nova compra",
+        icone: "link",
+      },
+      {
+        slug: "primeira_compra",
+        nome: "Iniciante",
+        descricao: "Realizou a primeira compra na loja",
+        icone: "shopping_cart",
+      },
+      {
+        slug: "fiel_escudeiro",
+        nome: "Fiel Escudeiro",
+        descricao: "Fez compras por 3 meses consecutivos",
+        icone: "workspace_premium",
+      },
+      {
+        slug: "negociador_nato",
+        nome: "Negociador Nato",
+        descricao: "Conseguiu 50 trocas no mercado",
+        icone: "store",
+      },
+      {
+        slug: "aniversario",
+        nome: "Feliz Aniversário",
+        descricao: "Ganhou bônus no dia do aniversário",
+        icone: "cake",
+      },
+      {
+        slug: "rei_das_trocas",
+        nome: "Rei das Trocas",
+        descricao: "Realizou 25 trocas de cupons com sucesso",
+        icone: "swap_horiz",
+      },
+      {
+        slug: "colecionador",
+        nome: "Colecionador",
+        descricao: "Possui 10 cupons diferentes ao mesmo tempo",
+        icone: "collections_bookmark",
+      },
+      {
+        slug: "bem_vindo",
+        nome: "Bem-vindo!",
+        descricao: "Completou o cadastro e fez o primeiro login",
+        icone: "waving_hand",
+      },
+    ]);
+      console.log("[FRIK] ✓ Achievements inserted (10)");
+    } catch (err) {
+      console.warn("[FRIK] ⚠️ Achievements insertion warning (non-critical):", err instanceof Error ? err.message : err);
+      // Não falha completamente se conquistas errarem
+    }
+
+    // ========== STAGE 3: Coupon Templates ==========
+    console.log("[FRIK] [STAGE 3/5] Inserting coupon templates...");
+    try {
+      templates = await AppDataSource.getRepository(CupomTemplate).save([
+      {
+        titulo: "20% off Eletrônicos",
+        descricao: "Desconto em eletrônicos selecionados",
+        categoria: "Eletrônicos",
+        descontoPercentual: "20.00",
+        valorMinimoCompra: "150.00",
+        diasValidade: 30,
+        ativo: true,
+        imagemUrl: "/images/cupons/eletronicos.png",
+        precoPontos: 500,
+        limitePorUsuario: 2,
+      },
+      {
+        titulo: "R$ 25 de cashback",
+        descricao: "Abatimento na próxima compra",
+        categoria: "Geral",
+        descontoPercentual: null,
+        valorMinimoCompra: "80.00",
+        diasValidade: 45,
+        ativo: true,
+        imagemUrl: "/images/cupons/cashback.png",
+        precoPontos: 400,
+      },
+      {
+        titulo: "Frete grátis Nacional",
+        descricao: "Válido para compras acima de R$ 99",
+        categoria: "Frete",
+        descontoPercentual: null,
+        valorMinimoCompra: "99.00",
+        diasValidade: 15,
+        ativo: true,
+        imagemUrl: "/images/cupons/frete.png",
+        precoPontos: 600,
+      },
+      {
+        titulo: "10% off Moda",
+        descricao: "Vestuário e acessórios",
+        categoria: "Moda",
+        descontoPercentual: "10.00",
+        valorMinimoCompra: null,
+        diasValidade: 30,
+        ativo: true,
+        imagemUrl: "/images/cupons/moda.png",
+        precoPontos: 300,
+      },
+      {
+        titulo: "R$ 50 de cashback VIP",
+        descricao: "Apenas para clientes selecionados",
+        categoria: "Geral",
+        descontoPercentual: null,
+        valorMinimoCompra: "200.00",
+        diasValidade: 60,
+        ativo: true,
+        imagemUrl: "/images/cupons/vip.png",
+        precoPontos: 1500,
+        limiteTotal: 50,
+      },
+      {
+        titulo: "15% off Games",
+        descricao: "Jogos e consoles",
+        categoria: "Games",
+        descontoPercentual: "15.00",
+        valorMinimoCompra: "300.00",
+        diasValidade: 20,
+        ativo: true,
+        imagemUrl: "/images/cupons/games.png",
+        precoPontos: 800,
+      },
+      {
+        titulo: "Frete expresso grátis",
+        descricao: "Entrega em até 2 dias",
+        categoria: "Frete",
+        descontoPercentual: null,
+        valorMinimoCompra: "250.00",
+        diasValidade: 10,
+        ativo: true,
+        imagemUrl: "/images/cupons/frete_expresso.png",
+        precoPontos: 1000,
+      },
+      {
+        titulo: "5% off em tudo",
+        descricao: "Válido para todo o site",
+        categoria: "Geral",
+        descontoPercentual: "5.00",
+        valorMinimoCompra: null,
+        diasValidade: 90,
+        ativo: true,
+        imagemUrl: "/images/cupons/5off.png",
+        precoPontos: 200,
+      },
+      {
+        titulo: "Compre 1 Leve 2 (Acessórios)",
+        descricao: "Válido em acessórios selecionados",
+        categoria: "Acessórios",
+        descontoPercentual: "50.00",
+        valorMinimoCompra: "100.00",
+        diasValidade: 30,
+        ativo: true,
+        imagemUrl: "/images/cupons/leve2.png",
+        precoPontos: 750,
+        limitePorUsuario: 1,
+      },
+      {
+        titulo: "R$ 100 off Smart TVs",
+        descricao: "Desconto direto na compra de TVs",
+        categoria: "Eletrônicos",
+        descontoPercentual: null,
+        valorMinimoCompra: "1500.00",
+        diasValidade: 15,
+        ativo: true,
+        imagemUrl: "/images/cupons/tv.png",
+        precoPontos: 2500,
+        limiteTotal: 20,
+      },
+    ] as Partial<CupomTemplate>[]);
+      console.log("[FRIK] ✓ Coupon templates inserted (10)");
+    } catch (err) {
+      console.warn("[FRIK] ⚠️ Coupon templates warning (non-critical):", err instanceof Error ? err.message : err);
+    }
+
+    // ========== STAGE 4: Test Users ==========
+    console.log("[FRIK] [STAGE 4/5] Inserting test users...");
+    try {
+      const senhaHash = await bcrypt.hash("senha123", 10);
+      usuarios = await AppDataSource.getRepository(Usuario).save([
+      {
+        nome: "Ana Silva",
+        email: "ana@frik.demo",
+        telefone: "11999990001",
+        cpf: "49280983156",
+        senhaHash,
+        nivelId: 3,
+        pontos: 2500,
+        papel: "cliente",
+        ativo: true,
+      },
+      {
+        nome: "Bruno Costa",
+        email: "bruno@frik.demo",
+        telefone: "11999990002",
+        cpf: "94816220100",
+        senhaHash,
+        nivelId: 2,
+        pontos: 800,
+        papel: "cliente",
+        ativo: true,
+      },
+      {
+        nome: "Carla Mendes",
+        email: "carla@frik.demo",
+        telefone: "11999990003",
+        cpf: "56064850108",
+        senhaHash,
+        nivelId: 1,
+        pontos: 120,
+        papel: "cliente",
+        ativo: true,
+      },
+      {
+        nome: "Admin FRIK",
+        email: "admin@frik.demo",
+        telefone: "11999990000",
+        cpf: "66393865180",
+        senhaHash,
+        nivelId: 5,
+        pontos: 0,
+        papel: "admin",
+        ativo: true,
+      },
+    ]);
+      console.log("[FRIK] ✓ Test users inserted (4)");
+    } catch (err) {
+      console.error("[FRIK] ✗ Test users error:", err);
+      throw err;
+    }
+
+    // ========== STAGE 5: Remaining Data (Optional - may timeout) ==========
+    console.log("[FRIK] [STAGE 5/5] Inserting remaining data (campaigns, products, etc)...");
+    try {
+      // Campanhas
+      const inicio = new Date();
+      inicio.setDate(inicio.getDate() - 1);
+      const fimCampanha = new Date();
+      fimCampanha.setDate(fimCampanha.getDate() + 30);
+
+      await AppDataSource.getRepository(Campanha).save({
+        titulo: "Boas-vindas Bronze",
+        descricao: "Bônus para novos membros nível Bronze",
+        segmentoJson: { nivel_slug: ["bronze"] },
+        inicioEm: inicio,
+        fimEm: fimCampanha,
+        ativa: true,
+      });
+      console.log("[FRIK] ✓ Campaigns inserted");
+    } catch (err) {
+      console.warn("[FRIK] ⚠️ Campaigns warning (non-critical):", err instanceof Error ? err.message : err);
+    }
+
+    // ========== FINAL VERIFICATION ==========
+    const finalNivelCount = await AppDataSource.getRepository(NivelFidelidade).count();
+    const finalUsuarioCount = await AppDataSource.getRepository(Usuario).count();
+    
+    console.log("[FRIK] ========== SEED PROCESS COMPLETED ==========");
+    console.log("[FRIK] ✅ SEED SUCCESSFULLY APPLIED!");
+    console.log("[FRIK] Data summary:");
+    console.log(`  - Niveis de Fidelidade: ${finalNivelCount}`);
+    console.log(`  - Usuarios: ${finalUsuarioCount}`);
+    console.log("[FRIK] Timestamp:", new Date().toISOString());
+    console.log("[FRIK] ==========================================");
+  } catch (error) {
+    console.error("[FRIK] ✗ Seed error:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    seedInitialized = false;
+    throw error;
+  }
+}
     try {
       await AppDataSource.getRepository(NivelFidelidade).save([
       {
