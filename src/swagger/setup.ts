@@ -1,35 +1,48 @@
-import { Express } from "express";
+import { Express, Router } from "express";
 import { openApiSpec } from "./openapi";
 
 export function setupSwagger(app: Express) {
-  app.get("/api/docs.json", (_req, res) => {
+  const swaggerRouter = Router();
+
+  // JSON spec endpoint
+  swaggerRouter.get("/docs.json", (_req, res) => {
+    res.setHeader("Content-Type", "application/json");
     res.json(openApiSpec);
   });
 
-  app.get("/api/docs", (_req, res) => {
+  // HTML Swagger UI endpoint
+  swaggerRouter.get("/docs", (_req, res) => {
     const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FRIK API — Swagger</title>
+    <title>FRIK API — Swagger UI</title>
     <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@4/swagger-ui.css" />
-    <style>html,body{height:100%}body{margin:0}</style>
+    <style>
+      html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+      * { box-sizing: inherit; }
+      body { margin: 0; padding: 0; }
+    </style>
   </head>
   <body>
     <div id="swagger-ui"></div>
     <script src="https://unpkg.com/swagger-ui-dist@4/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@4/swagger-ui-standalone-preset.js"></script>
     <script>
       window.onload = function() {
-        SwaggerUIBundle({
+        const ui = SwaggerUIBundle({
           url: '/api/docs.json',
           dom_id: '#swagger-ui',
-          presets: [SwaggerUIBundle.presets.apis],
+          presets: [
+            SwaggerUIBundle.presets.apis,
+            SwaggerUIStandalonePreset
+          ],
           layout: 'BaseLayout',
-          validatorUrl: null,
-          docExpansion: 'none',
-          operationsSorter: 'alpha'
+          deepLinking: true,
+          validatorUrl: null
         });
+        window.ui = ui;
       };
     </script>
   </body>
@@ -38,4 +51,7 @@ export function setupSwagger(app: Express) {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.send(html);
   });
+
+  // Register swagger routes
+  app.use("/api", swaggerRouter);
 }
