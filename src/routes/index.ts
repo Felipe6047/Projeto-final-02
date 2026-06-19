@@ -69,6 +69,53 @@ router.get("/health/schema", async (_req, res) => {
   }
 });
 
+// 🌱 Endpoint PÚBLICO para verificar se o seed foi aplicado
+router.get("/health/seed", async (_req, res) => {
+  try {
+    if (!AppDataSource.isInitialized) {
+      return res.status(503).json({ 
+        status: "error", 
+        message: "Database not initialized",
+        seed: { applied: false }
+      });
+    }
+
+    const { NivelFidelidade } = await import("../entities/NivelFidelidade");
+    const { Usuario } = await import("../entities/Usuario");
+    const { Produto } = await import("../entities/Produto");
+    const { Conquista } = await import("../entities/Conquista");
+
+    const nivelCount = await AppDataSource.getRepository(NivelFidelidade).count();
+    const usuarioCount = await AppDataSource.getRepository(Usuario).count();
+    const produtoCount = await AppDataSource.getRepository(Produto).count();
+    const conquistaCount = await AppDataSource.getRepository(Conquista).count();
+
+    const seedApplied = nivelCount > 0;
+
+    return res.status(200).json({
+      status: seedApplied ? "ok" : "warning",
+      seed: {
+        applied: seedApplied,
+        data: {
+          nivelFidelidade: nivelCount,
+          usuarios: usuarioCount,
+          produtos: produtoCount,
+          conquistas: conquistaCount,
+        },
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("Seed check failed:", err);
+    return res.status(500).json({
+      status: "error",
+      message: "Seed verification failed",
+      error: err instanceof Error ? err.message : String(err),
+      seed: { applied: false }
+    });
+  }
+});
+
 // Swagger JSON spec
 router.get("/docs.json", (_req, res) => {
   const { openApiSpec } = require("../swagger/openapi");
