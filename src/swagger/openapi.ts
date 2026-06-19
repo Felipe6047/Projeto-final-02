@@ -15,8 +15,8 @@ export const openApiSpec = {
   },
   servers: [
     {
-      url: `http://localhost:${env.port}/api`,
-      description: "Servidor local",
+      url: "/api",
+      description: "API (relative) — works in development and in Vercel",
     },
   ],
   tags: [
