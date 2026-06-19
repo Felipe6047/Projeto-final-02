@@ -30,4 +30,10 @@ export const AppDataSource = new DataSource({
   synchronize: false,
   logging: env.nodeEnv === "development",
   ssl: env.db.ssl ? { rejectUnauthorized: false } : undefined,
+  // Performance improvements
+  poolSize: 10,
+  maxQueryExecutionTime: 1000, // Log queries taking longer than 1s
+  cache: {
+    duration: 30000, // 30 seconds
+  },
 });

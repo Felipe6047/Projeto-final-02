@@ -10,6 +10,8 @@
     "db:migrate": "ts-node --files src/database/run-migrations.ts",
     "db:seed": "ts-node --files src/database/seed.ts",
     "db:schema": "npm run db:migrate",
+    "db:check": "ts-node --files scripts/check-db.ts",
+    "db:full": "npm run db:migrate && npm run db:seed",
     "db:legacy-sql": "mysql -u root -p < database/schema.sql",
     "test": "jest",
     "test:unit": "jest tests/unit",

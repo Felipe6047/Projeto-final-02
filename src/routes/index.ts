@@ -119,8 +119,19 @@ router.get("/docs", (_req, res) => {
 });
 
 router.use("/auth", authRoutes);
+router.use("/mercado", mercadoRoutes);
+router.use("/presentes", presentesRoutes);
+router.use("/ranking", rankingRoutes);
+router.use("/produtos", produtosRoutes);
+router.use("/admin", adminRoutes);
+router.use("/compra", compraRoutes);
+router.use("/notificacoes", notificacaoRoutes);
+router.use("/salas", salasRoutes);
+router.use("/simulador-caixa", simuladorCaixaRoutes);
+router.use("/missoes", missoesRoutes);
 router.use("/campanhas", campanhasRoutes);
 router.use("/amigos", amigosRoutes);
 router.use("/enderecos", enderecoRoutes);
+router.use("/cartoes", cartaoRoutes);
 
 export default router;
