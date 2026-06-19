@@ -1,0 +1,287 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-05-21T00:00:00.000Z",
+  "__export_source": "frik-backend",
+  "resources": [
+    {
+      "_id": "wrk_frik",
+      "_type": "workspace",
+      "name": "FRIK API",
+      "description": "Sistema de Fidelização com Gamificação"
+    },
+    {
+      "_id": "env_frik_local",
+      "_type": "environment",
+      "name": "FRIK Local",
+      "data": {
+        "base_url": "http://localhost:3333",
+        "token": ""
+      },
+      "parentId": "wrk_frik"
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "name": "Auth",
+      "parentId": "wrk_frik"
+    },
+    {
+      "_id": "fld_mercado",
+      "_type": "request_group",
+      "name": "Mercado de Cupons",
+      "parentId": "wrk_frik"
+    },
+    {
+      "_id": "fld_presentes",
+      "_type": "request_group",
+      "name": "Presentes",
+      "parentId": "wrk_frik"
+    },
+    {
+      "_id": "fld_ranking",
+      "_type": "request_group",
+      "name": "Ranking",
+      "parentId": "wrk_frik"
+    },
+    {
+      "_id": "fld_produtos",
+      "_type": "request_group",
+      "name": "Produtos",
+      "parentId": "wrk_frik"
+    },
+    {
+      "_id": "req_health",
+      "_type": "request",
+      "name": "Health Check",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/health",
+      "parentId": "wrk_frik"
+    },
+    {
+      "_id": "req_login",
+      "_type": "request",
+      "name": "Login",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "parentId": "fld_auth",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Accept", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"ana@frik.demo\",\n  \"senha\": \"senha123\"\n}"
+      },
+      "afterResponseScript": "const body = insomnia.response.json();\nif (body.token) {\n  insomnia.environment.set('token', body.token);\n}"
+    },
+    {
+      "_id": "req_registro",
+      "_type": "request",
+      "name": "Registro",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/registro",
+      "parentId": "fld_auth",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Accept", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Novo Usuario\",\n  \"email\": \"novo@frik.demo\",\n  \"senha\": \"senha123\",\n  \"telefone\": \"11988887777\"\n}"
+      }
+    },
+    {
+      "_id": "req_perfil",
+      "_type": "request",
+      "name": "Perfil",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/auth/perfil",
+      "parentId": "fld_auth",
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      }
+    },
+    {
+      "_id": "req_mercado_config",
+      "_type": "request",
+      "name": "Config Mercado",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/mercado-cupons/config",
+      "parentId": "fld_mercado",
+      "authentication": { "type": "bearer", "token": "{{ _.token }}" }
+    },
+    {
+      "_id": "req_meus_cupons",
+      "_type": "request",
+      "name": "Meus Cupons",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/mercado-cupons/meus-cupons",
+      "parentId": "fld_mercado",
+      "authentication": { "type": "bearer", "token": "{{ _.token }}" }
+    },
+    {
+      "_id": "req_mercado_lista",
+      "_type": "request",
+      "name": "Listar Mercado",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/mercado-cupons?busca=&categoria=",
+      "parentId": "fld_mercado",
+      "authentication": { "type": "bearer", "token": "{{ _.token }}" }
+    },
+    {
+      "_id": "req_oferecer",
+      "_type": "request",
+      "name": "Oferecer para Troca",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/mercado-cupons/oferecer/1",
+      "parentId": "fld_mercado",
+      "authentication": { "type": "bearer", "token": "{{ _.token }}" }
+    },
+    {
+      "_id": "req_solicitar_troca",
+      "_type": "request",
+      "name": "Solicitar Troca",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/mercado-cupons/solicitar-troca",
+      "parentId": "fld_mercado",
+      "authentication": { "type": "bearer", "token": "{{ _.token }}" },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Accept", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cupomSolicitadoId\": 3,\n  \"cupomOfertadoId\": 1,\n  \"aceitarTaxa\": true\n}"
+      }
+    },
+    {
+      "_id": "req_responder_troca",
+      "_type": "request",
+      "name": "Aceitar/Recusar Troca",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/mercado-cupons/propostas/1",
+      "parentId": "fld_mercado",
+      "authentication": { "type": "bearer", "token": "{{ _.token }}" },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Accept", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"aceitar\": true\n}"
+      }
+    },
+    {
+      "_id": "req_historico",
+      "_type": "request",
+      "name": "Histórico de Trocas",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/mercado-cupons/historico",
+      "parentId": "fld_mercado",
+      "authentication": { "type": "bearer", "token": "{{ _.token }}" }
+    },
+    {
+      "_id": "req_presente_cupom",
+      "_type": "request",
+      "name": "Dar Cupom de Presente",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/presentes/cupom",
+      "parentId": "fld_presentes",
+      "authentication": { "type": "bearer", "token": "{{ _.token }}" },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Accept", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cupomId\": 2,\n  \"canal\": \"email\",\n  \"mensagem\": \"Parabéns! Um presente para você.\",\n  \"destinatarioNome\": \"Amigo\",\n  \"destinatarioEmail\": \"amigo@email.com\"\n}"
+      }
+    },
+    {
+      "_id": "req_presente_produto",
+      "_type": "request",
+      "name": "Comprar Produto como Presente",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/presentes/produto",
+      "parentId": "fld_presentes",
+      "authentication": { "type": "bearer", "token": "{{ _.token }}" },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Accept", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"itens\": [{ \"produtoId\": 1, \"quantidade\": 1 }],\n  \"pontosUsados\": 500,\n  \"valorReais\": 0,\n  \"destinatario\": {\n    \"nome\": \"Maria Souza\",\n    \"email\": \"maria@email.com\",\n    \"cpf\": \"44444444444\"\n  },\n  \"endereco\": {\n    \"cep\": \"01310100\",\n    \"logradouro\": \"Av. Paulista\",\n    \"numero\": \"1000\",\n    \"bairro\": \"Bela Vista\",\n    \"cidade\": \"São Paulo\",\n    \"uf\": \"SP\"\n  },\n  \"mensagem\": \"Feliz aniversário!\",\n  \"embrulho\": true,\n  \"enviarSurpresa\": false\n}"
+      }
+    },
+    {
+      "_id": "req_pedidos_presente",
+      "_type": "request",
+      "name": "Listar Pedidos Presente",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/presentes/pedidos",
+      "parentId": "fld_presentes",
+      "authentication": { "type": "bearer", "token": "{{ _.token }}" }
+    },
+    {
+      "_id": "req_ranking_global",
+      "_type": "request",
+      "name": "Ranking Global",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/ranking/global?limite=20",
+      "parentId": "fld_ranking"
+    },
+    {
+      "_id": "req_ranking_beneficios",
+      "_type": "request",
+      "name": "Benefícios por Nível",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/ranking/beneficios",
+      "parentId": "fld_ranking"
+    },
+    {
+      "_id": "req_ranking_meu_nivel",
+      "_type": "request",
+      "name": "Meu Nível e Progresso",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/ranking/meu-nivel",
+      "parentId": "fld_ranking",
+      "authentication": { "type": "bearer", "token": "{{ _.token }}" }
+    },
+    {
+      "_id": "req_ranking_conquistas",
+      "_type": "request",
+      "name": "Minhas Conquistas",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/ranking/conquistas",
+      "parentId": "fld_ranking",
+      "authentication": { "type": "bearer", "token": "{{ _.token }}" }
+    },
+    {
+      "_id": "req_ranking_evento",
+      "_type": "request",
+      "name": "Evento Sazonal Ativo",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/ranking/evento-ativo",
+      "parentId": "fld_ranking"
+    },
+    {
+      "_id": "req_produtos_lista",
+      "_type": "request",
+      "name": "Listar Produtos",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/produtos",
+      "parentId": "fld_produtos"
+    },
+    {
+      "_id": "req_produto_id",
+      "_type": "request",
+      "name": "Produto por ID",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/produtos/1",
+      "parentId": "fld_produtos"
+    }
+  ]
+}
